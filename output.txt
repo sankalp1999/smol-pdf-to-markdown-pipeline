@@ -1,0 +1,73 @@
+Processing folder: 1706.03762v7
+Processing image 1/2...
+./1706.03762v7/images/Page_01.jpeg
+<image_here>
+
+Figure 1: The Transformer - model architecture.
+
+The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure 1, respectively.
+
+### 3.1 Encoder and Decoder Stacks
+
+**Encoder:** The encoder is composed of a stack of \( N = 6 \) identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is 
+
+\[
+\text{LayerNorm}(x + \text{Sublayer}(x)),
+\]
+
+where Sublayer(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension \( d_{\text{model}} = 512 \).
+
+**Decoder:** The decoder is also composed of a stack of \( N = 6 \) identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with the fact that the output embeddings are offset by one position, ensures that the predictions for position \( i \) can depend only on the known outputs at positions less than \( i \).
+
+### 3.2 Attention
+
+An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum
+[
+  {
+    "figure": "Figure 1",
+    "bbox": [64, 217, 503, 555]
+  }
+]
+Page 1 markdown with coordinated image tags saved to ./1706.03762v7/markdown/page_001.md
+Processing image 2/2...
+./1706.03762v7/images/Page_02.jpeg
+Scaled Dot-Product Attention | Multi-Head Attention
+----------------------------|--------------------
+<image_here>                | <image_here>
+
+Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.
+
+of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.
+
+### 3.2.1 Scaled Dot-Product Attention
+
+We call our particular attention "Scaled Dot-Product Attention" (Figure 2). The input consists of queries and keys of dimension \(d_k\), and values of dimension \(d_v\). We compute the dot products of the query with all keys, divide each by \(\sqrt{d_k}\), and apply a softmax function to obtain the weights on the values.
+
+In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix \(Q\). The keys and values are also packed together into matrices \(K\) and \(V\). We compute the matrix of outputs as:
+
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$ (1)
+
+The two most commonly used attention functions are additive attention [2], and dot-product (multiplicative) attention. Dot-product attention is identical to our algorithm, except for the scaling factor of \(\frac{1}{\sqrt{d_k}}\). Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
+
+While for small values of \(d_k\) the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of \(d_k\) [3]. We suspect that for large values of \(d_k\), the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients.* To counteract this effect, we scale the dot products by \(\frac{1}{\sqrt{d_k}}\).
+
+### 3.2.2 Multi-Head Attention
+
+Instead of performing a single attention function with \(d_{\text{model}}\)-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values \(h\) times with different, learned linear projections to \(d_k\), \(d_k\) and \(d_v\) dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding \(d_v\)-dimensional
+
+---
+* To illustrate why the dot products get large, assume that the components of \(q\) and \(k\) are independent random variables with mean 0 and variance 1. Then their dot product, \(q \cdot k = \sum_{i=1}^{d} q_i k_i\), has mean 0 and variance \(d_k\).
+[
+    {    
+        "figure" : "Scaled Dot-Product Attention",        
+        "bbox" : [92, 64, 539, 288]    
+    },    
+    {        
+        "figure" : "Multi-Head Attention",        
+        "bbox" : [92, 412, 542, 644]    
+    }
+]
+Page 2 markdown with coordinated image tags saved to ./1706.03762v7/markdown/page_002.md
+All PDF images have been processed and converted to markdown with coordinated image tags.
